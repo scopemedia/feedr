@@ -12,7 +12,14 @@
 
   renderLoading(state, container)
 
+
+  // Loader State
+
   function renderLoading(data, into) {
-    // TODO: Add the template
+    into.innerHTML = `
+      <div id="pop-up" class="loader">
+      </div>
+    `
   }
+
 })()
