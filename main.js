@@ -9,10 +9,6 @@
 
   var container = document.querySelector('#container')
   var state = {loading: true}
-  var feedOrigin = '';
-  // data.items.item.img
-  var data = []
-
 
   // Loader State
 
@@ -22,6 +18,13 @@
       </div>
     `
   }
+
+
+// States
+//  - Leading state
+//  - Defatult state
+
+
 
   // Call loader
 
@@ -37,169 +40,224 @@
   // }
 
 
+//  Function takes in Reddit json and returns an object with values
+
+  function redditDataProcessor(dataAsJson) {
+    var i = -1
+    var articleData = dataAsJson.data.children.map((item) => {
+      i++;
+      return {
+        articleTitle: item.data.title,
+        articleDescription: item.title,
+        articleCategory: item.data.subreddit,
+        articleCount: item.data.ups,
+        articleLink: item.data.url,
+        articleImage: item.data.thumbnail,
+        dataID: i
+      }
+    })
+    return articleData
+  }
 
 
-  function loadRSS(url) {
+  //  Function takes in Mashable json and returns an object with values
+
+  function mashableDataProcessor(dataAsJson) {
+    var i = -1
+    var articleData =  dataAsJson.hot.map((item) => {
+      i++;
+      return {
+        articleTitle: item.title,
+        articleDescription: item.content.plain ,
+        articleCategory: item.channel,
+        articleCount: item.shares.total,
+        articleLink: item.link,
+        articleImage: item.image,
+        dataID: i
+      }
+    })
+    return articleData
+  }
+
+  //  Function takes in Mashable json and returns an object with values
+
+    function nytDataProcessor(dataAsJson) {
+      var i = -1
+      var articleData =  dataAsJson.results.map((item) => {
+        i++;
+        return {
+          articleTitle: item.title,
+          articleDescription: item.abstract,
+          articleCategory: item.abstract,
+          articleCount: '',
+          articleLink: 'image',
+          articleImage: 'http://placehold.it/200x200',
+          dataID: i
+        }
+      })
+      return articleData
+    }
+
+
+  //function takes in json and returns
+
+  function loadRSS(url, dataProcessor) {
     fetch(url).then((response) => {
+      renderLoading(state, container)
       return response.json()
     }).then((dataAsJson) => {
       // update state
       state = {loading: false}
-
       // Render Article Template
 
-      if (url === 'https://crossorigin.me/http://mashable.com/stories.json') {
-        console.log('Mashable');
-
-        var feed = dataAsJson.hot;
-
-        function renderImage(item) {
-
-            return `
-              <section class="featured-image">
-                no image
-              </section>
-              <section class="article-content">
-                <a href="${item.link}"><h3>${item.title}</h3></a>
-                <h6>${item.channel}</h6>
-              </section>
-              <section class="impressions">
-                ${item.shares.total}
-              </section>
-              <div class="clearfix"></div>
-            `
-        }
+      var processedData = dataProcessor(dataAsJson)
 
 
-        // Render Section Module Template
 
-        function renderArticles(data, into) {
+// Create function to render Section around articles
+//  - Function takes 2 parameters
+//    1 - The Processed Data from the feed (Which contains an object with the key value pairs)
+//    2 - The location to render into
 
-          into.innerHTML = `
-            <section id="main" class="wrapper">
-              ${data.map((item) => {
+      function renderArticleList(data, into) {
 
-                // if (item.data.preview.images) {
-                //   console.log('yes to image')
-                // }
-                return `
-                  <article class="article">
-                    ${renderImage(item)}
-                    <div class="clearfix"></div>
-                  </article>
-                `
-              })}
+        into.innerHTML = `
+          <section id="main" class="wrapper">
+            ${data.map((item) => {
+              return `
+                <article class="article">
+                  ${renderArticle(item)}
+                  <div class="clearfix"></div>
+                </article>
+              `
+            }).join('')}
+          </section>
+        `
+
+// Create Function to render articles
+//  - Returns article content with processedDate values
+
+        function renderArticle(item) {
+
+          return `
+            <section class="featured-image">
+              <img src="${item.articleImage}" alt="" />
             </section>
-          `
-        }
-
-        renderArticles(feed, container);
-
-      } else if (url === 'https://www.reddit.com/top.json') {
-        console.log('Reddit');
-        var feed = dataAsJson.data.children;
-
-        function renderImage(item) {
-
-          // console.log('Image - ' + item.data.preview.images[0].resolutions[0].url);
-
-            return `
-              <section class="featured-image">
-                no image
-              </section>
-              <section class="article-content">
-                <a href="${item.data.url}"><h3>${item.data.title}</h3></a>
-                <h6>${item.data.subreddit}</h6>
-              </section>
-              <section class="impressions">
-                ${item.data.ups}
-              </section>
-              <div class="clearfix"></div>
-            `
-        }
-
-
-        // Render Section Module Template
-
-        function renderArticles(data, into) {
-
-          into.innerHTML = `
-            <section id="main" class="wrapper">
-              ${data.map((item) => {
-
-                // if (item.data.preview.images) {
-                //   console.log('yes to image')
-                // }
-                return `
-                  <article class="article">
-                    ${renderImage(item)}
-                    <div class="clearfix"></div>
-                  </article>
-                `
-              })}
+            <section class="article-content">
+              <a href="#0" data-id="${item.dataID}"><h3>${item.articleTitle}</h3></a>
+              <h6>${item.articleCategory}</h6>
             </section>
+            <section class="impressions">
+              ${item.articleCount}
+            </section>
+            <div class="clearfix"></div>
           `
+
         }
 
-        renderArticles(feed, container);
+
+//   Add listener to the article link which pops up the article modal
+//   - Creates a variable for the link
+//   - Add the listener whcih calls the trigger on popup
+
+        var popupLink = document.querySelectorAll('.article-content a')
+
+        for (var i = 0; i < popupLink.length; i++) {
+          popupLink[i].addEventListener("click", popUpTrigger, false);
+        }
+
+
+        function popUpTrigger() {
+          var popupID = this.getAttribute('data-id')
+          popUp(processedData[popupID], articlepopup);
+        }
+
 
       }
 
+// Call function to render Article List
+//  - Function takes 2 parameters
+//    1 - The Processed Data from the feed (Which contains an object with the key value pairs)
+//    2 - The location to render into
+
+      renderArticleList(processedData, container);
 
 
-      // Render Popup
+
+//  Create function to Render Popup
+//  - Takes in 2 parameters
+//    1 - The article data - Needs to be the correct data
+//    2 - Container in whcih to inject the html
 
       function popUp(data, into) {
-
         into.innerHTML = `
           <div id="pop-up">
             <a href="#" class="close-pop-up">X</a>
             <div class="wrapper">
-              <h1>Article title here</h1>
+              <h1>${data.articleTitle}</h1>
               <p>
-              Article description/content here.
+              ${data.articleDescription}
               </p>
-              <a href="#" class="pop-up-action" target="_blank">Read more from source</a>
+              <a href="${data.articleLink}" class="pop-up-action" target="_blank">Read more from source</a>
             </div>
           </div>
         `
+
+
+//  Create function to close popup modal
+//  - Create a variable for close icon
+//  - Add event listener to button
+//  - When button is clicked call the popUpClose function which clears the html
+//    content f
+
+        var popupCloseBtn = document.querySelector('.close-pop-up')
+
+        popupCloseBtn.addEventListener("click", popUpClose, false);
+
+// Close Popup by injecting empty html into the articlepopup conatiner
+        function popUpClose() {
+          into.innerHTML = `
+          `
+        }
+
       }
 
 
-      // popUp(feed, popup);
-
     }).catch(function(err) {
       console.log('Error', err);
+      alert('Error fetching the RSS feed. Please try again or choose one of the other feeds.')
     });
   };
 
 
-
-  // Call the loadRSS function with desired RSS feed
-
-  loadRSS('https://www.reddit.com/top.json')
-  // loadRSS('https://crossorigin.me/http://mashable.com/stories.json')
-
-
-  // listener for click
-  // render state
-  // pop-up
-
-//  If nav li a content is 'Reddit' then
-//  loadRSS('https://www.reddit.com/top.json')
+// listener for click
+// render state
+// pop-up
 
 
 
 var switcher = document.querySelectorAll('nav li ul li a');
+    switcherName = document.querySelector('nav ul li a span');
+
 for (var i = 0; i < switcher.length; i++) {
 
   // Function that checks text content of link and loads matching RSS feed
   function clickMe() {
     if (this.textContent === 'Reddit') {
-      loadRSS('https://www.reddit.com/top.json')
+      updateName('Reddit')
+      loadRSS('https://www.reddit.com/top.json', redditDataProcessor)
     } else if (this.textContent === 'Mashable') {
-      loadRSS('https://crossorigin.me/http://mashable.com/stories.json')
+      updateName('Mashable')
+      loadRSS('https://crossorigin.me/http://mashable.com/stories.json', mashableDataProcessor)
+    } else if (this.textContent === 'The New York Times') {
+      updateName('The New York Times')
+      loadRSS('https://api.nytimes.com/svc/topstories/v2/home.json?api-key=292be8f89bfb4a96921390a6946d011a', nytDataProcessor)
     }
+  }
+
+  // Function to update Feed name in switcher
+  function updateName(name) {
+    switcherName.innerHTML = name;
   }
 
   // Listens for clicks on links and calls function to switch RSS feed
@@ -208,6 +266,29 @@ for (var i = 0; i < switcher.length; i++) {
 }
 //
 
+
+// Logo reset
+//  - On click of the logo load the default feed.
+
+// Cache the logo variable
+var logo = document.querySelector('h1');
+
+// Listen for click on logo
+logo.addEventListener("click", tester, false);
+
+// Trigger function to reset feed
+function tester() {
+  loadRSS('https://www.reddit.com/top.json', redditDataProcessor)
+  updateName('Reddit')
+}
+
+
+// Default state for Feedr
+//  - Calls the RSS function with a feed url
+//  - Updates the feed name in the selector
+
+  loadRSS('https://www.reddit.com/top.json', redditDataProcessor)
+  updateName('Reddit')
 
 
 })()
