@@ -1,3 +1,17 @@
+Feedr Project README
+
+
+Feedr is a single page app that display the best collection of feeds on the internet.
+
+- There is a default state that displays the Reddit Feed
+- If you are viewing another feed then clicking on the feedr logo will bring you back to the default state
+- Choose another feed from the News Source menu
+- Click on an article you are interested in to view more details which include a link to the original story
+
+
+
+
+
 # ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Unit Project #2: Feedr
 
 For our Unit 2 project we will build __Feedr__, a personalized feed reader. Our
